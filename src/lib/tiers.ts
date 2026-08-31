@@ -44,7 +44,17 @@ export function getShowsForMovie(event: Pick<Event, "event_time">): Show[] {
         key: `${ti}-${format.toLowerCase()}`,
         theatre: t.name,
         format,
-        time: time.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
+        // Fixed locale + time zone (this app is India-focused) so the
+        // server-rendered and client-hydrated text always match — using
+        // the visitor's own locale/zone here would make BookingFlow (a
+        // client component, so its markup is both SSR'd and hydrated)
+        // render differently in each environment and trigger a hydration
+        // mismatch whenever they differ.
+        time: time.toLocaleTimeString("en-IN", {
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: "Asia/Kolkata",
+        }),
       });
     });
   });
