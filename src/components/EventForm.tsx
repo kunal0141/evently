@@ -1,4 +1,5 @@
 import type { Event } from "@/types";
+import { CATEGORIES } from "@/lib/categories";
 
 function toDatetimeLocal(iso?: string) {
   if (!iso) return "";
@@ -9,6 +10,10 @@ function toDatetimeLocal(iso?: string) {
   )}:${pad(d.getMinutes())}`;
 }
 
+const inputClass =
+  "w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-faint outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/25";
+const labelClass = "mb-1.5 block text-sm font-medium text-text-muted";
+
 export default function EventForm({
   action,
   defaultValues,
@@ -18,11 +23,14 @@ export default function EventForm({
   defaultValues?: Partial<Event>;
   submitLabel: string;
 }) {
+  const priceRupees =
+    defaultValues?.price_cents != null ? defaultValues.price_cents / 100 : 0;
+
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={action} className="flex flex-col gap-5">
       <div>
-        <label className="mb-1 block text-sm font-medium text-neutral-700" htmlFor="title">
-          Title
+        <label className={labelClass} htmlFor="title">
+          Event title
         </label>
         <input
           id="title"
@@ -30,41 +38,61 @@ export default function EventForm({
           type="text"
           required
           maxLength={120}
+          placeholder="e.g. Zakir Khan Live — Haq Se Single"
           defaultValue={defaultValues?.title}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+          className={inputClass}
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-neutral-700" htmlFor="description">
+        <label className={labelClass} htmlFor="category">
+          Category
+        </label>
+        <select
+          id="category"
+          name="category"
+          defaultValue={defaultValues?.category ?? "other"}
+          className={inputClass}
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.emoji} {c.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className={labelClass} htmlFor="description">
           Description
         </label>
         <textarea
           id="description"
           name="description"
           rows={4}
+          placeholder="What's this event about? What should attendees expect?"
           defaultValue={defaultValues?.description}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+          className={inputClass}
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-neutral-700" htmlFor="location">
-          Location
+        <label className={labelClass} htmlFor="location">
+          Venue / location
         </label>
         <input
           id="location"
           name="location"
           type="text"
-          placeholder="e.g. Online, or a venue address"
+          placeholder="e.g. Online, or Phoenix Marketcity, Bengaluru"
           defaultValue={defaultValues?.location}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+          className={inputClass}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
-          <label className="mb-1 block text-sm font-medium text-neutral-700" htmlFor="event_time">
+          <label className={labelClass} htmlFor="event_time">
             Date &amp; time
           </label>
           <input
@@ -73,11 +101,11 @@ export default function EventForm({
             type="datetime-local"
             required
             defaultValue={toDatetimeLocal(defaultValues?.event_time)}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+            className={inputClass}
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-neutral-700" htmlFor="capacity">
+          <label className={labelClass} htmlFor="capacity">
             Capacity
           </label>
           <input
@@ -86,15 +114,30 @@ export default function EventForm({
             type="number"
             min={1}
             required
-            defaultValue={defaultValues?.capacity ?? 10}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+            defaultValue={defaultValues?.capacity ?? 50}
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className={labelClass} htmlFor="price">
+            Price (₹)
+          </label>
+          <input
+            id="price"
+            name="price"
+            type="number"
+            min={0}
+            step="1"
+            placeholder="0 for free"
+            defaultValue={priceRupees || ""}
+            className={inputClass}
           />
         </div>
       </div>
 
       <button
         type="submit"
-        className="mt-2 rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+        className="mt-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-[0.99]"
       >
         {submitLabel}
       </button>

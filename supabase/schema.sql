@@ -12,12 +12,20 @@ create table if not exists public.events (
   location    text not null default '',
   event_time  timestamptz not null,
   capacity    int not null check (capacity >= 1),
+  category    text not null default 'other' check (
+    category in (
+      'movies', 'comedy', 'concerts', 'workshops', 'conferences',
+      'theatre', 'sports', 'food', 'art', 'nightlife', 'kids', 'other'
+    )
+  ),
+  price_cents int not null default 0 check (price_cents >= 0),
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
 
 create index if not exists events_event_time_idx on public.events (event_time);
 create index if not exists events_host_id_idx on public.events (host_id);
+create index if not exists events_category_idx on public.events (category);
 
 -- ========== BOOKINGS (core business-flow entity) ==========
 create table if not exists public.bookings (

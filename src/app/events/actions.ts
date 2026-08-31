@@ -3,10 +3,21 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { CATEGORY_MAP } from "@/lib/categories";
 
 function toTimestamp(dateLocal: string) {
   // dateLocal comes from an <input type="datetime-local"> e.g. "2026-09-12T18:30"
   return new Date(dateLocal).toISOString();
+}
+
+function toCategory(raw: string): string {
+  return CATEGORY_MAP[raw] ? raw : "other";
+}
+
+function toPriceCents(raw: string): number {
+  const rupees = Number(raw || 0);
+  if (!Number.isFinite(rupees) || rupees < 0) return 0;
+  return Math.round(rupees * 100);
 }
 
 // ---------- CRUD: create ----------
@@ -22,6 +33,8 @@ export async function createEvent(formData: FormData) {
   const location = String(formData.get("location") || "").trim();
   const eventTime = String(formData.get("event_time") || "");
   const capacity = Number(formData.get("capacity") || 0);
+  const category = toCategory(String(formData.get("category") || "other"));
+  const priceCents = toPriceCents(String(formData.get("price") || "0"));
 
   if (!title || !eventTime || !capacity || capacity < 1) {
     redirect(
@@ -40,6 +53,8 @@ export async function createEvent(formData: FormData) {
       location,
       event_time: toTimestamp(eventTime),
       capacity,
+      category,
+      price_cents: priceCents,
     })
     .select("id")
     .single();
@@ -66,6 +81,8 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const location = String(formData.get("location") || "").trim();
   const eventTime = String(formData.get("event_time") || "");
   const capacity = Number(formData.get("capacity") || 0);
+  const category = toCategory(String(formData.get("category") || "other"));
+  const priceCents = toPriceCents(String(formData.get("price") || "0"));
 
   if (!title || !eventTime || !capacity || capacity < 1) {
     redirect(
@@ -83,6 +100,8 @@ export async function updateEvent(eventId: string, formData: FormData) {
       location,
       event_time: toTimestamp(eventTime),
       capacity,
+      category,
+      price_cents: priceCents,
     })
     .eq("id", eventId)
     .eq("host_id", user!.id); // RLS also enforces this; belt & suspenders

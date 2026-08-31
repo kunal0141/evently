@@ -1,22 +1,93 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base surfaces — Netflix-style near-black with subtle elevation steps */
+  --bg: #0a0a0b;
+  --bg-elevated: #141416;
+  --surface: #1a1a1d;
+  --surface-hover: #232326;
+  --border: #2c2c30;
+  --border-strong: #3a3a3f;
+
+  /* Text */
+  --text: #f5f5f2;
+  --text-muted: #a3a3a8;
+  --text-faint: #6b6b70;
+
+  /* Brand — deep maroon-red, Netflix-adjacent but warmer/darker */
+  --primary: #b0142f;
+  --primary-hover: #d4183a;
+  --primary-dim: #6e0e22;
+  --primary-soft: rgba(176, 20, 47, 0.16);
+
+  --success: #1db954;
+  --success-soft: rgba(29, 185, 84, 0.14);
+  --danger: #e5484d;
+  --danger-soft: rgba(229, 72, 77, 0.14);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-dim: var(--primary-dim);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-bebas), var(--font-geist-sans), sans-serif;
 }
 
-/* This app has a single, deliberately light UI — no dark-mode variant — so
-   background/text color are set via Tailwind classes on <body> in layout.tsx
-   rather than here. (A plain, unlayered `body { ... }` rule here would beat
-   Tailwind's utility classes in the cascade regardless of specificity,
-   since Tailwind v4 utilities live inside a lower-priority @layer.) */
+/* This app has a single, deliberately dark UI — no light-mode variant — so
+   background/text color are set here directly (not as a `body {}` rule,
+   which would be unlayered and beat Tailwind's utility classes regardless
+   of specificity, since Tailwind v4 utilities live inside a lower-priority
+   @layer). */
+html {
+  background: var(--bg);
+  color-scheme: dark;
+}
+
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: var(--primary);
+  color: white;
+}
+
+/* Slim, dark-themed scrollbar for horizontal category rows */
+.scroll-row {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.scroll-row::-webkit-scrollbar {
+  height: 8px;
+}
+.scroll-row::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: fade-in 0.35s ease-out both;
 }

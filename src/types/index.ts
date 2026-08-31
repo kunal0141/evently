@@ -1,3 +1,5 @@
+import type { CategoryId } from "@/lib/categories";
+
 export type Event = {
   id: string;
   host_id: string;
@@ -6,6 +8,8 @@ export type Event = {
   location: string;
   event_time: string; // ISO timestamp
   capacity: number;
+  category: CategoryId;
+  price_cents: number;
   created_at: string;
   updated_at: string;
 };
