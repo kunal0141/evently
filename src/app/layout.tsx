@@ -21,9 +21,9 @@ const bebasNeue = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
-  title: "Evently — Comedy, Concerts, Conferences & More",
+  title: "Evently: Comedy, Concerts, Conferences & More",
   description:
-    "Book standup comedy, concerts, workshops, conferences, theatre, sports and more — or host your own event in minutes.",
+    "Book standup comedy, concerts, workshops, conferences, theatre, sports and more, or host your own event in minutes.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

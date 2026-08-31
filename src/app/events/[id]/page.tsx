@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPastIso } from "@/lib/dates";
 import { getCategory, formatPrice } from "@/lib/categories";
+import { isSeatable } from "@/lib/tiers";
 import { bookEvent, cancelBooking, deleteEvent } from "../actions";
 
 function formatDate(iso: string) {
@@ -32,12 +33,17 @@ export default async function EventDetailPage({
 
   const { data: bookings } = await supabase
     .from("bookings")
-    .select("id, user_id")
+    .select("id, user_id, seat_label, class_name, tier_key")
     .eq("event_id", id)
     .eq("status", "confirmed");
 
-  const bookedCount = bookings?.length ?? 0;
-  const myBooking = bookings?.find((b) => b.user_id === user?.id);
+  const seatable = isSeatable(event.category);
+  const generalBookings = (bookings ?? []).filter((b) => !b.seat_label);
+  const bookedCount = generalBookings.length;
+  const myBooking = generalBookings.find((b) => b.user_id === user?.id);
+  const mySeatBookings = (bookings ?? []).filter(
+    (b) => b.seat_label && b.user_id === user?.id
+  );
   const isHost = user?.id === event.host_id;
   const spotsLeft = event.capacity - bookedCount;
   const isFull = spotsLeft <= 0;
@@ -102,7 +108,9 @@ export default async function EventDetailPage({
           <div className="mt-4 flex flex-col gap-1.5 text-sm text-text-muted">
             <p>🗓️ {formatDate(event.event_time)}</p>
             {event.location && <p>📍 {event.location}</p>}
-            <p className="text-base font-semibold text-text">{formatPrice(event.price_cents)}</p>
+            <p className="text-base font-semibold text-text">
+              {seatable ? `From ${formatPrice(event.price_cents || 15000)}` : formatPrice(event.price_cents)}
+            </p>
           </div>
 
           {event.description && (
@@ -111,53 +119,111 @@ export default async function EventDetailPage({
             </p>
           )}
 
-          <div className="mt-6 rounded-xl border border-border bg-bg-elevated p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <p className={`text-sm font-medium ${isFull ? "text-danger" : "text-text"}`}>
-                {isFull ? "Sold out" : `${spotsLeft} of ${event.capacity} spots left`}
+          {/* Already-purchased seats for this event, if any */}
+          {mySeatBookings.length > 0 && (
+            <div className="mt-6 rounded-xl border border-success/30 bg-success-soft p-4">
+              <p className="mb-2 text-sm font-medium text-success">
+                You have {mySeatBookings.length} ticket{mySeatBookings.length > 1 ? "s" : ""} for this event
               </p>
-              <span className="text-xs text-text-faint">{bookedCount} booked</span>
+              <div className="flex flex-wrap gap-2">
+                {mySeatBookings.map((b) => (
+                  <Link
+                    key={b.id}
+                    href={`/tickets/${b.id}`}
+                    className="rounded-full border border-success/40 bg-bg-elevated px-3 py-1 text-xs font-medium text-text hover:border-success"
+                  >
+                    {b.class_name ? `${b.class_name} · ` : ""}
+                    {b.seat_label} → View ticket
+                  </Link>
+                ))}
+              </div>
             </div>
-            <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-surface">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${pctFull}%` }}
-              />
-            </div>
+          )}
 
-            {isPast ? (
-              <p className="text-sm text-text-faint">This event has already happened.</p>
-            ) : !user ? (
-              <Link
-                href={`/login?next=${encodeURIComponent(`/events/${event.id}`)}`}
-                className="inline-block w-full rounded-lg bg-primary py-3 text-center text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover"
-              >
-                Log in to book
-              </Link>
-            ) : isHost ? (
-              <p className="text-sm text-text-faint">You&apos;re hosting this event.</p>
-            ) : myBooking ? (
-              <form action={cancelBooking}>
-                <input type="hidden" name="bookingId" value={myBooking.id} />
-                <input type="hidden" name="eventId" value={event.id} />
-                <button
-                  type="submit"
-                  className="w-full rounded-lg border border-danger/40 py-3 text-sm font-semibold text-danger transition hover:bg-danger-soft"
-                >
-                  Cancel my booking
-                </button>
-              </form>
+          <div className="mt-6 rounded-xl border border-border bg-bg-elevated p-4">
+            {seatable ? (
+              <>
+                <p className="mb-3 text-sm text-text-muted">
+                  Pick a theatre, stand, or section, then choose your exact seat.
+                </p>
+                {isPast ? (
+                  <p className="text-sm text-text-faint">This event has already happened.</p>
+                ) : !user ? (
+                  <Link
+                    href={`/login?next=${encodeURIComponent(`/events/${event.id}/book`)}`}
+                    className="inline-block w-full rounded-lg bg-primary py-3 text-center text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover"
+                  >
+                    Log in to select seats
+                  </Link>
+                ) : isHost ? (
+                  <p className="text-sm text-text-faint">You&apos;re hosting this event.</p>
+                ) : (
+                  <Link
+                    href={`/events/${event.id}/book`}
+                    className="inline-block w-full rounded-lg bg-primary py-3 text-center text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover"
+                  >
+                    Select seats
+                  </Link>
+                )}
+              </>
             ) : (
-              <form action={bookEvent}>
-                <input type="hidden" name="eventId" value={event.id} />
-                <button
-                  type="submit"
-                  disabled={isFull}
-                  className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
-                >
-                  {isFull ? "Sold out" : `Book my spot · ${formatPrice(event.price_cents)}`}
-                </button>
-              </form>
+              <>
+                <div className="mb-2 flex items-center justify-between">
+                  <p className={`text-sm font-medium ${isFull ? "text-danger" : "text-text"}`}>
+                    {isFull ? "Sold out" : `${spotsLeft} of ${event.capacity} spots left`}
+                  </p>
+                  <span className="text-xs text-text-faint">{bookedCount} booked</span>
+                </div>
+                <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-surface">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${pctFull}%` }}
+                  />
+                </div>
+
+                {isPast ? (
+                  <p className="text-sm text-text-faint">This event has already happened.</p>
+                ) : !user ? (
+                  <Link
+                    href={`/login?next=${encodeURIComponent(`/events/${event.id}`)}`}
+                    className="inline-block w-full rounded-lg bg-primary py-3 text-center text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover"
+                  >
+                    Log in to book
+                  </Link>
+                ) : isHost ? (
+                  <p className="text-sm text-text-faint">You&apos;re hosting this event.</p>
+                ) : myBooking ? (
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Link
+                      href={`/tickets/${myBooking.id}`}
+                      className="flex-1 rounded-lg bg-primary py-3 text-center text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover"
+                    >
+                      View e-ticket
+                    </Link>
+                    <form action={cancelBooking} className="flex-1">
+                      <input type="hidden" name="bookingId" value={myBooking.id} />
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <button
+                        type="submit"
+                        className="w-full rounded-lg border border-danger/40 py-3 text-sm font-semibold text-danger transition hover:bg-danger-soft"
+                      >
+                        Cancel my booking
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <form action={bookEvent}>
+                    <input type="hidden" name="eventId" value={event.id} />
+                    <button
+                      type="submit"
+                      disabled={isFull}
+                      className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                    >
+                      {isFull ? "Sold out" : `Book my spot · ${formatPrice(event.price_cents)}`}
+                    </button>
+                  </form>
+                )}
+              </>
             )}
           </div>
         </div>

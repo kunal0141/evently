@@ -19,6 +19,10 @@ export type Booking = {
   event_id: string;
   user_id: string;
   status: "confirmed" | "cancelled";
+  tier_key: string | null;
+  class_name: string | null;
+  seat_label: string | null;
+  price_cents: number;
   created_at: string;
 };
 

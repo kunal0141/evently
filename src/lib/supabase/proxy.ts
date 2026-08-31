@@ -31,13 +31,14 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const protectedPaths = ["/events/new", "/my-events", "/bookings"];
+  const protectedPaths = ["/events/new", "/my-events", "/bookings", "/tickets"];
   const isProtected = protectedPaths.some((p) =>
     request.nextUrl.pathname.startsWith(p)
   );
   const isEditPath = /^\/events\/[^/]+\/edit/.test(request.nextUrl.pathname);
+  const isBookPath = /^\/events\/[^/]+\/book/.test(request.nextUrl.pathname);
 
-  if (!user && (isProtected || isEditPath)) {
+  if (!user && (isProtected || isEditPath || isBookPath)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", request.nextUrl.pathname);

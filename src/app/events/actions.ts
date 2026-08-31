@@ -154,7 +154,7 @@ export async function bookEvent(formData: FormData) {
   redirect(`/events/${eventId}?message=${encodeURIComponent("You're booked in!")}`);
 }
 
-// ---------- Business flow: cancel a booking ----------
+// ---------- Business flow: cancel a booking (refunds the wallet) ----------
 export async function cancelBooking(formData: FormData) {
   const bookingId = String(formData.get("bookingId") || "");
   const eventId = String(formData.get("eventId") || "");
@@ -164,7 +164,7 @@ export async function cancelBooking(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  await supabase.from("bookings").delete().eq("id", bookingId).eq("user_id", user!.id);
+  await supabase.rpc("cancel_booking", { p_booking_id: bookingId });
 
   revalidatePath("/events");
   revalidatePath("/bookings");

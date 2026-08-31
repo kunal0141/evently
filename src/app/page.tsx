@@ -34,7 +34,7 @@ export default async function Home() {
           </span>
         </h1>
         <p className="mt-5 max-w-xl text-balance text-base text-text-muted sm:text-lg">
-          Book standup comedy, concerts, workshops, conferences and more — or
+          Book standup comedy, concerts, workshops, conferences and more, or
           host your own event and sell out in minutes. No back-and-forth
           emails, no spreadsheets.
         </p>
@@ -43,7 +43,7 @@ export default async function Home() {
             href="/signup"
             className="rounded-full bg-primary px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-hover"
           >
-            Get started — it&apos;s free
+            Get started, it&apos;s free
           </Link>
           <Link
             href="/login"

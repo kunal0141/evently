@@ -148,44 +148,43 @@ body {
   }
 }
 
-/* ---------- Looping typewriter headline ---------- */
-.typewriter-text {
-  display: inline-block;
-  max-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  vertical-align: bottom;
-  animation: typewriter-reveal 3.8s steps(32, end) infinite;
-}
+/* ---------- Typewriter headline (types once, then a soft blinking caret) ----------
+   Mobile-first: plain wrapped text, no clipping/animation, so long headlines
+   wrap to two lines instead of overflowing the viewport. From the `sm`
+   breakpoint up (where the whole phrase comfortably fits on one line), it
+   becomes a single-line box that reveals itself once via `max-width`, then
+   stays fully typed — only the caret keeps blinking afterward. */
 .typewriter-text::after {
-  content: "";
-  display: inline-block;
-  width: 0.07em;
-  height: 0.85em;
-  margin-left: 0.06em;
-  background: currentColor;
-  vertical-align: -0.08em;
-  animation: typewriter-caret 0.8s steps(1) infinite;
+  display: none;
 }
 
-@keyframes typewriter-reveal {
-  0% {
+@media (min-width: 640px) {
+  .typewriter-text {
+    display: inline-block;
+    max-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    vertical-align: bottom;
+    animation: typewriter-reveal-once 2.4s steps(32, end) 0.3s 1 forwards;
+  }
+  .typewriter-text::after {
+    content: "";
+    display: inline-block;
+    width: 0.07em;
+    height: 0.85em;
+    margin-left: 0.06em;
+    background: currentColor;
+    vertical-align: -0.08em;
+    animation: typewriter-caret 0.8s steps(1) 2.6s infinite;
+  }
+}
+
+@keyframes typewriter-reveal-once {
+  from {
     max-width: 0;
   }
-  3% {
-    max-width: 0;
-  }
-  55% {
+  to {
     max-width: 32ch;
-  }
-  82% {
-    max-width: 32ch;
-  }
-  92% {
-    max-width: 0;
-  }
-  100% {
-    max-width: 0;
   }
 }
 

@@ -38,7 +38,7 @@ export default function EventForm({
           type="text"
           required
           maxLength={120}
-          placeholder="e.g. Zakir Khan Live — Haq Se Single"
+          placeholder="e.g. Zakir Khan Live: Haq Se Single"
           defaultValue={defaultValues?.title}
           className={inputClass}
         />

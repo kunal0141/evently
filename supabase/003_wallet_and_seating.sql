@@ -1,35 +1,9 @@
--- Evently database schema
--- Run this whole file once in Supabase: Dashboard -> SQL Editor -> New query -> paste -> Run
--- (For a project that already ran an older version of this file, run the
--- numbered migration files in supabase/ instead, in order.)
+-- Migration: adds a test-money wallet per user, and seat/tier/price columns
+-- on bookings so a booking can represent a specific seat in a specific
+-- price class (Silver/Gold/Platinum) instead of just "one general spot".
+-- Run this in Supabase SQL Editor. Safe to run more than once.
 
-create extension if not exists "pgcrypto";
-
--- ========== EVENTS (core CRUD entity) ==========
-create table if not exists public.events (
-  id          uuid primary key default gen_random_uuid(),
-  host_id     uuid not null references auth.users(id) on delete cascade,
-  title       text not null check (char_length(title) between 1 and 120),
-  description text not null default '',
-  location    text not null default '',
-  event_time  timestamptz not null,
-  capacity    int not null check (capacity >= 1),
-  category    text not null default 'other' check (
-    category in (
-      'movies', 'comedy', 'concerts', 'workshops', 'conferences',
-      'theatre', 'sports', 'food', 'art', 'nightlife', 'kids', 'other'
-    )
-  ),
-  price_cents int not null default 0 check (price_cents >= 0),
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
-);
-
-create index if not exists events_event_time_idx on public.events (event_time);
-create index if not exists events_host_id_idx on public.events (host_id);
-create index if not exists events_category_idx on public.events (category);
-
--- ========== WALLET (test money for mock payments) ==========
+-- ========== WALLET ==========
 create table if not exists public.profiles (
   user_id               uuid primary key references auth.users(id) on delete cascade,
   wallet_balance_cents  bigint not null default 10000000, -- ₹1,00,000 test balance
@@ -44,8 +18,9 @@ create policy "users can view their own profile"
   to authenticated
   using (user_id = auth.uid());
 
--- wallet_balance_cents only ever changes via the security-definer RPCs
--- below, never a direct client update, so there's no UPDATE policy.
+-- profiles.wallet_balance_cents is only ever changed by the security-definer
+-- RPCs below (book_event / book_seats / top_up_wallet), never by a direct
+-- client update, so no UPDATE policy is granted to authenticated users.
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -65,7 +40,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- backfill profiles for any users that already existed
+-- backfill profiles for any users created before this migration
 insert into public.profiles (user_id)
 select id from auth.users
 on conflict (user_id) do nothing;
@@ -92,25 +67,20 @@ $$;
 
 grant execute on function public.top_up_wallet(int) to authenticated;
 
--- ========== BOOKINGS (core business-flow entity) ==========
--- A booking is either "general admission" (seat_label is null — one per
--- user per event) or a specific seat in a specific price tier (seat_label
--- is set — a user can hold several of these per event, but each individual
--- seat can only ever be booked once).
-create table if not exists public.bookings (
-  id          uuid primary key default gen_random_uuid(),
-  event_id    uuid not null references public.events(id) on delete cascade,
-  user_id     uuid not null references auth.users(id) on delete cascade,
-  status      text not null default 'confirmed' check (status in ('confirmed', 'cancelled')),
-  tier_key    text,
-  class_name  text,
-  seat_label  text,
-  price_cents int not null default 0,
-  created_at  timestamptz not null default now()
-);
+-- ========== SEATED BOOKINGS ==========
+alter table public.bookings
+  add column if not exists tier_key   text,
+  add column if not exists class_name text,
+  add column if not exists seat_label text,
+  add column if not exists price_cents int not null default 0;
 
-create index if not exists bookings_user_id_idx on public.bookings (user_id);
-create index if not exists bookings_event_id_idx on public.bookings (event_id);
+-- The original schema had `unique (event_id, user_id)`, which only allows
+-- one booking per user per event ever — fine for general admission, wrong
+-- once a user can hold several distinct seats on the same event. Replace it
+-- with two partial unique indexes: at most one *general-admission* booking
+-- (seat_label is null) per user per event, and each specific seat can only
+-- ever be booked once.
+alter table public.bookings drop constraint if exists bookings_event_id_user_id_key;
 
 create unique index if not exists bookings_general_admission_unique
   on public.bookings (event_id, user_id)
@@ -120,71 +90,7 @@ create unique index if not exists bookings_seat_unique
   on public.bookings (event_id, tier_key, seat_label)
   where seat_label is not null;
 
--- keep updated_at fresh on events
-create or replace function public.set_updated_at()
-returns trigger
-language plpgsql
-as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
-
-drop trigger if exists events_set_updated_at on public.events;
-create trigger events_set_updated_at
-  before update on public.events
-  for each row execute function public.set_updated_at();
-
--- ========== RLS ==========
-alter table public.events enable row level security;
-alter table public.bookings enable row level security;
-
--- anyone signed in can browse all events
-drop policy if exists "events are viewable by authenticated users" on public.events;
-create policy "events are viewable by authenticated users"
-  on public.events for select
-  to authenticated
-  using (true);
-
--- only the host can create/update/delete their own events
-drop policy if exists "hosts can insert their own events" on public.events;
-create policy "hosts can insert their own events"
-  on public.events for insert
-  to authenticated
-  with check (host_id = auth.uid());
-
-drop policy if exists "hosts can update their own events" on public.events;
-create policy "hosts can update their own events"
-  on public.events for update
-  to authenticated
-  using (host_id = auth.uid())
-  with check (host_id = auth.uid());
-
-drop policy if exists "hosts can delete their own events" on public.events;
-create policy "hosts can delete their own events"
-  on public.events for delete
-  to authenticated
-  using (host_id = auth.uid());
-
--- a user can see their own bookings; a host can see bookings on their events
-drop policy if exists "users can view their own bookings" on public.bookings;
-create policy "users can view their own bookings"
-  on public.bookings for select
-  to authenticated
-  using (
-    user_id = auth.uid()
-    or exists (select 1 from public.events e where e.id = event_id and e.host_id = auth.uid())
-  );
-
--- direct inserts/deletes are blocked; bookings are created and cancelled via
--- the RPCs below (security definer) so capacity, seat uniqueness, and the
--- wallet balance all stay consistent atomically.
-
--- ========== book_event RPC (general admission) ==========
--- Atomically checks remaining capacity, debits the wallet, and inserts a
--- booking, avoiding a race condition between "check spots left" and
--- "insert booking".
+-- ========== book_event: now also debits the wallet ==========
 create or replace function public.book_event(p_event_id uuid)
 returns public.bookings
 language plpgsql
@@ -195,7 +101,7 @@ declare
   v_capacity int;
   v_booked   int;
   v_price    int;
-  v_balance  bigint;
+  v_balance  int;
   v_booking  public.bookings;
 begin
   if auth.uid() is null then
@@ -241,7 +147,7 @@ $$;
 
 grant execute on function public.book_event(uuid) to authenticated;
 
--- ========== book_seats RPC (specific seats in a price tier) ==========
+-- ========== book_seats: pick specific seats in a tier ==========
 create or replace function public.book_seats(
   p_event_id uuid,
   p_tier_key text,
@@ -297,7 +203,7 @@ $$;
 
 grant execute on function public.book_seats(uuid, text, text, text[], int) to authenticated;
 
--- ========== cancel_booking RPC (cancels + refunds the wallet) ==========
+-- ========== cancel_booking: cancels + refunds the wallet ==========
 create or replace function public.cancel_booking(p_booking_id uuid)
 returns void
 language plpgsql

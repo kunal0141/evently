@@ -12,7 +12,7 @@ export default async function NewEventPage({
     <div className="mx-auto max-w-lg px-4 py-10 sm:px-6">
       <h1 className="mb-1 font-display text-3xl tracking-wide text-text">Host an event</h1>
       <p className="mb-6 text-sm text-text-muted">
-        Fill in the details — people will be able to browse and book it right away.
+        Fill in the details, and people will be able to browse and book it right away.
       </p>
 
       {error && (
