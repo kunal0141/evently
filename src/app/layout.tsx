@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
+import Backdrop3D from "@/components/Backdrop3D";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${bebasNeue.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-bg text-text">
+      <body className="min-h-full flex flex-col bg-bg text-text isolate">
+        <Backdrop3D variant="ambient" />
         <NavBar />
         <main className="flex-1">{children}</main>
       </body>

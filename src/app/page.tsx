@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CATEGORIES } from "@/lib/categories";
+import Backdrop3D from "@/components/Backdrop3D";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -14,7 +15,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative isolate overflow-hidden">
       {/* Ambient background glow */}
       <div
         className="pointer-events-none absolute -top-40 left-1/2 h-[36rem] w-[52rem] -translate-x-1/2 rounded-full opacity-40 blur-3xl"
@@ -23,13 +24,14 @@ export default async function Home() {
             "radial-gradient(closest-side, rgba(176,20,47,0.55), rgba(176,20,47,0) 70%)",
         }}
       />
+      {/* 3D revolving showcase: mic → clapperboard → drama masks → bat & ball → music → art */}
+      <Backdrop3D variant="hero" />
 
       <div className="relative mx-auto flex min-h-[78vh] max-w-3xl flex-col items-center justify-center px-4 pt-16 text-center sm:pt-20">
-        <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-1.5 text-xs font-medium text-text-muted">
-          🎟️ Comedy · Concerts · Conferences · Workshops · Theatre · Sports
-        </span>
         <h1 className="font-display text-5xl leading-[1.05] tracking-wide text-text sm:text-7xl">
-          Every event <span className="text-primary-hover">worth going to.</span>
+          <span className="typewriter-text">
+            Every event <span className="text-primary-hover">worth going to.</span>
+          </span>
         </h1>
         <p className="mt-5 max-w-xl text-balance text-base text-text-muted sm:text-lg">
           Book standup comedy, concerts, workshops, conferences and more — or
@@ -59,14 +61,15 @@ export default async function Home() {
         </p>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
           {CATEGORIES.filter((c) => c.id !== "other").map((c) => (
-            <div
+            <Link
               key={c.id}
-              className="flex flex-col items-center gap-2 rounded-xl border border-border bg-surface px-3 py-5 transition hover:-translate-y-1 hover:border-border-strong"
+              href={`/login?next=${encodeURIComponent(`/events?category=${c.id}`)}`}
+              className="flex flex-col items-center gap-2 rounded-xl border border-border bg-surface px-3 py-5 transition hover:-translate-y-1 hover:border-border-strong hover:shadow-lg hover:shadow-black/40"
               style={{ backgroundImage: c.gradient, backgroundBlendMode: "soft-light" }}
             >
               <span className="text-2xl">{c.emoji}</span>
               <span className="text-center text-xs font-medium text-text">{c.label}</span>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

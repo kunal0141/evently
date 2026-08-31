@@ -91,3 +91,117 @@ body {
 .animate-fade-in {
   animation: fade-in 0.35s ease-out both;
 }
+
+/* ---------- 3D revolving category backdrop ----------
+   A stack of large icons, each visible for its own slice of one shared
+   loop, entering/exiting via a Y-axis 3D rotation. Icon N gets a negative
+   animation-delay of N * -(cycle/count) so it starts already at its own
+   phase of the loop — a pure-CSS carousel, no JS needed. */
+.backdrop-stage {
+  perspective: 1400px;
+}
+.backdrop-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  animation-name: icon-cycle;
+  animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes icon-cycle {
+  0% {
+    opacity: 0;
+    transform: rotateY(-110deg) scale(0.55);
+  }
+  4% {
+    opacity: 1;
+    transform: rotateY(-6deg) scale(1.04);
+  }
+  9% {
+    opacity: 1;
+    transform: rotateY(0deg) scale(1);
+  }
+  13% {
+    opacity: 1;
+    transform: rotateY(0deg) scale(1);
+  }
+  17% {
+    opacity: 0;
+    transform: rotateY(100deg) scale(0.55);
+  }
+  100% {
+    opacity: 0;
+    transform: rotateY(100deg) scale(0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop-icon {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* ---------- Looping typewriter headline ---------- */
+.typewriter-text {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: bottom;
+  animation: typewriter-reveal 3.8s steps(32, end) infinite;
+}
+.typewriter-text::after {
+  content: "";
+  display: inline-block;
+  width: 0.07em;
+  height: 0.85em;
+  margin-left: 0.06em;
+  background: currentColor;
+  vertical-align: -0.08em;
+  animation: typewriter-caret 0.8s steps(1) infinite;
+}
+
+@keyframes typewriter-reveal {
+  0% {
+    max-width: 0;
+  }
+  3% {
+    max-width: 0;
+  }
+  55% {
+    max-width: 32ch;
+  }
+  82% {
+    max-width: 32ch;
+  }
+  92% {
+    max-width: 0;
+  }
+  100% {
+    max-width: 0;
+  }
+}
+
+@keyframes typewriter-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typewriter-text {
+    animation: none;
+    max-width: none;
+  }
+  .typewriter-text::after {
+    animation: none;
+    opacity: 0;
+  }
+}
