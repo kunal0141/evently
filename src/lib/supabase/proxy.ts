@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Refreshes the Supabase auth session on every request and protects
-// logged-in-only routes. Runs in Next.js middleware (edge runtime).
+// logged-in-only routes. Runs in Next.js Proxy (edge runtime).
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
