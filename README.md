@@ -4,8 +4,8 @@ A tiny events platform: create an event with a limited number of seats, browse
 what's on, and book (or cancel) your spot. Built as an end-to-end demo of
 auth + CRUD + a real business flow.
 
-**Live app:** _add your deployed URL here_
-**Test credentials:** _add reviewer login here (see "Test account" below)_
+**Live app:** https://evently-evently4.vercel.app
+**Test credentials:** `reviewer@evently.test` / `TestPass123!` (see "Test account" below)
 
 ## The problem it solves
 
@@ -106,11 +106,12 @@ supabase/schema.sql             full DB schema, RLS policies, booking RPC
 ## Test account
 
 For reviewers, either sign up with any email/password (email confirmation is
-disabled, so this works instantly), or use:
+disabled, so this works instantly), or use the seeded account below, which
+already hosts two sample events:
 
 ```
-email:    <add a seeded test account email here>
-password: <add its password here>
+email:    reviewer@evently.test
+password: TestPass123!
 ```
 
 ## Known limitations
